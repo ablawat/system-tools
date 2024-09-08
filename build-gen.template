@@ -1,0 +1,34 @@
+<begin:rules-base>
+# define source and object paths
+objects_dir_name = obj
+sources_dir_path = ../
+
+# define compiler options
+flags = -Wall -Werror
+
+# generate object file from source file
+rule compile
+    depfile = $out.d
+    command = gcc -MD -MF $out.d $flags -c $in -o $out
+
+# create executable file from object files
+rule link
+    command = gcc $flags $in -o $out
+<end:rules-base>
+
+<begin:object-comment>
+# make object files
+<end:object-comment>
+
+<object-build>
+build $objects_dir_name/{0}.o: compile {0}.c
+
+<begin:executable-comment>
+# make executable
+<end:executable-comment>
+
+<executable-link>
+build {0}: link
+
+<object-link>
+$objects_dir_name/{0}.o
