@@ -243,7 +243,7 @@ project_name = os.path.basename(project_path)
 
 # define template file
 template_file_name = 'build-gen.template'
-template_file_path = os.path.join(os.path.dirname(__file__), template_file_name)
+template_file_path = os.path.join('/usr/local/etc/build-gen', template_file_name)
 
 # define ninja build script file
 ninja_build_file_name = 'build.ninja'
