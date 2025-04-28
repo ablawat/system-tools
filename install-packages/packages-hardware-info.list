@@ -1,0 +1,3 @@
+# provides system hardware information
+lshw
+dmidecode
