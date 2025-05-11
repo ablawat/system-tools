@@ -1,23 +1,25 @@
 #!/usr/bin/env python
 
 import time
+import enum
 import signal
 import os
 
-from enum import Enum
+class Identifier(enum.Enum):
 
-class identifier(Enum):
     SINGLE      = 1
     MULTI_BEGIN = 2
     MULTI_END   = 3
 
-class read_state(Enum):
+class ReadState(enum.Enum):
+
     SEARCH_FOR_ATTRIBUTE  = 1
     GET_SINGLE_LINE_VALUE = 2
     GET_MULTI_LINE_VALUE  = 3
 
-#------------------------------------------------------------
+#-----------------------------------
 def config_line_attribute_get(line):
+
     # remove leading and trailing whitespace characters
     striped = line.strip()
 
@@ -28,26 +30,28 @@ def config_line_attribute_get(line):
 
         # when markers are found in correct place
         if first == '<' and last == '>':
+            # get found attribute name
             attribute = striped[1:len(striped) - 1]
 
+            # check for attribute type
             splited = attribute.split(':')
 
-            # when separator is not used
+            # when separator is not found
             if len(splited) == 1:
                 # get single-line attribute name
-                return splited[0], identifier.SINGLE
+                return splited[0], Identifier.SINGLE
 
-            # when separator is used once
+            # when separator is found
             elif len(splited) == 2:
-                # when there is start statement
+                # when there is a start statement
                 if splited[0] == 'begin': 
                     # get multi-line attribute name
-                    return splited[1], identifier.MULTI_BEGIN
+                    return splited[1], Identifier.MULTI_BEGIN
 
-                # when there is stop statement
+                # when there is a stop statement
                 elif splited[0] == 'end':
                     # get multi-line attribute name
-                    return splited[1], identifier.MULTI_END
+                    return splited[1], Identifier.MULTI_END
 
                 # when there is other statement
                 else:
@@ -67,25 +71,29 @@ def config_line_attribute_get(line):
         # no printable characters in line
         raise AttributeError('config: line is empty')
 
-#------------------------------------------------------------
-def template_read(template_file_path):
-    # read template file
-    with open(template_file_path) as file:
-        template_lines = file.readlines()
+#-----------------------
+def template_read(file):
 
+    # open template file
+    with open(file) as template_file:
+        # read all lines from template
+        template_lines = template_file.readlines()
+
+    # create attributes structure
     template_attributes = {}
 
     name = ''
-    state = read_state.SEARCH_FOR_ATTRIBUTE
+    state = ReadState.SEARCH_FOR_ATTRIBUTE
     value = []
 
+    # go through every line of template
     for line in template_lines:
         # when in previous line found single-line attribute
-        if state == read_state.GET_SINGLE_LINE_VALUE:
+        if state == ReadState.GET_SINGLE_LINE_VALUE:
             # add attribute with single-line value
             template_attributes[name] = line
             # search for possible next attribute
-            state = read_state.SEARCH_FOR_ATTRIBUTE
+            state = ReadState.SEARCH_FOR_ATTRIBUTE
 
         # when searching for attribute or getting multi-line attribute
         else:
@@ -93,30 +101,30 @@ def template_read(template_file_path):
                 # parse line for possible attribute definition
                 id, id_type = config_line_attribute_get(line)
 
-                if state == read_state.SEARCH_FOR_ATTRIBUTE:
+                if state == ReadState.SEARCH_FOR_ATTRIBUTE:
                     # when single-line attribute is defined
-                    if id_type == identifier.SINGLE:
+                    if id_type == Identifier.SINGLE:
                         name = id
-                        state = read_state.GET_SINGLE_LINE_VALUE
+                        state = ReadState.GET_SINGLE_LINE_VALUE
 
                     # when multi-line start attribute is defined
-                    elif id_type == identifier.MULTI_BEGIN:
+                    elif id_type == Identifier.MULTI_BEGIN:
                         name = id
                         value = []
-                        state = read_state.GET_MULTI_LINE_VALUE
+                        state = ReadState.GET_MULTI_LINE_VALUE
 
                     # when multi-line stop attribute is defined
                     else:
                         # multi-line start attribute is missing
                         raise ValueError('error: bad attribute')
 
-                elif state == read_state.GET_MULTI_LINE_VALUE:
+                elif state == ReadState.GET_MULTI_LINE_VALUE:
                     # when
-                    if id_type == identifier.MULTI_END and name == id:
+                    if id_type == Identifier.MULTI_END and name == id:
                         # add attribute with multi-line value
                         template_attributes[name] = value
                         # search for possible next attribute
-                        state = read_state.SEARCH_FOR_ATTRIBUTE
+                        state = ReadState.SEARCH_FOR_ATTRIBUTE
 
                     # when
                     else:
@@ -129,7 +137,7 @@ def template_read(template_file_path):
             # when line does not define any attribute
             except ValueError:
                 # when multi-line attribute is in progress
-                if state == read_state.GET_MULTI_LINE_VALUE:
+                if state == ReadState.GET_MULTI_LINE_VALUE:
                     # add line to multi-line attribute
                     value.append(line)
 
@@ -141,46 +149,50 @@ def template_read(template_file_path):
             # when line is empty
             except AttributeError:
                 # when multi-line attribute is in progress
-                if state == read_state.GET_MULTI_LINE_VALUE:
+                if state == ReadState.GET_MULTI_LINE_VALUE:
                     # add line to multi-line attribute
                     value.append(line)
 
     # when there is some incomplete attribute
-    if state != read_state.SEARCH_FOR_ATTRIBUTE:
+    if state != ReadState.SEARCH_FOR_ATTRIBUTE:
         # attributes configuration is not correct
         raise ValueError('error: bad attribute')
 
     return template_attributes
 
-#------------------------------------------------------------
-def sources_names_get(directory_path):
-    sources_names = []
+#--------------------------------
+def sources_names_get(directory):
 
-    # get all files from directory
-    files = os.listdir(directory_path)
+    # create sources list
+    source_names = []
 
+    # find all files from directory
+    files = os.listdir(directory)
+
+    # go through every found file
     for file_name in files:
         # when file is a C language source
         if file_name.endswith('.c'):
             # get file base name
             file_name_base = os.path.splitext(file_name)[0]
 
-            # add name to sources list
-            sources_names.append(file_name_base)
+            # add name to sources
+            source_names.append(file_name_base)
 
     # when no files were found
-    if not sources_names:
+    if not source_names:
         # no sources found
         raise IndexError('sources not found')
 
-    return sources_names
+    return source_names
 
-#------------------------------------------------------------
-def objects_build_rules_create(sources_names):
+#---------------------------------------
+def objects_build_rules_create(sources):
+
     max_length = 0
     build_rules = []
 
-    for source_name in sources_names:
+    for source_name in sources:
         # generate object build rule
         build_rule = template_attributes['object-build'].format(source_name)
         splited = build_rule.split(':', 1)
@@ -206,8 +218,9 @@ def objects_build_rules_create(sources_names):
 
     return make_objects_list
 
-#------------------------------------------------------------
-def executable_link_rule_create(project_name, sources_names):
+#-------------------------------------------------
+def executable_link_rule_create(project, sources):
+
     make_executable_list = []
 
     # add break and comment
@@ -215,7 +228,7 @@ def executable_link_rule_create(project_name, sources_names):
     make_executable_list.extend(template_attributes['executable-comment'])
 
     # generate executable link rule
-    link_rule = template_attributes['executable-link'].format(project_name)
+    link_rule = template_attributes['executable-link'].format(project)
 
     # add line break symbol
     link_rule = link_rule.rstrip('\n') + ' $' + '\n'
@@ -223,12 +236,12 @@ def executable_link_rule_create(project_name, sources_names):
     # add executable link rule
     make_executable_list.append(link_rule)
 
-    for i, source_name in enumerate(sources_names):
+    for i, source_name in enumerate(sources):
         # generate link rule for object file
         link_rule = template_attributes['object-link'].format(source_name)
 
         # when there is not last object file
-        if i < len(sources_names) - 1:
+        if i < len(sources) - 1:
             # add line break symbol
             link_rule = link_rule.rstrip('\n') + ' $' + '\n'
 
@@ -256,7 +269,7 @@ try:
     # get attributes from temaplate file
     template_attributes = template_read(template_file_path)
 
-    print('Project Name: ' + project_name)
+    print('Project Name: ' + '\'' + project_name + '\'')
     print('Found C Source Files:')
 
     # show all found sources
@@ -273,27 +286,27 @@ try:
     build_ninja_text += executable_link_rule_create(project_name, project_sources)
 
     # save generated build script into file
-    with open(ninja_build_file_path, "w") as file:
+    with open(ninja_build_file_path, 'w') as file:
         file.writelines(build_ninja_text)
 
-    print('Created Build Script: ' + '\'' + ninja_build_file_name + '\'')
+    print('Build script ' + '\'' + ninja_build_file_name + '\'' + ' is created.')
 
 # when file read or write has failed
 except OSError as error:
-    print('[ERROR] input output error')
+    print('[error] File input or output has failed.')
     print(f"{error}")
 
 # when no sources were found in working directory
 except IndexError as error:
-    print('[ERROR] no source files in this directory')
+    print('[error] No source files were found.')
     print(f"{error}")
 
 # when attributes configuration is not valid
 except ValueError as error:
-    print('[ERROR] attributes config not correct')
+    print('[error] Incorrect attributes configuration in the template.')
     print(f"{error}")
 
-# when required attribute value is not configured
+# when required attribute is not configured
 except KeyError as error:
-    print('[ERROR] missing attribute in template file')
+    print('[error] Required attribute is missing in the template.')
     print(f"{error}")
