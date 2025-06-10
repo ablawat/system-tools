@@ -1,0 +1,11 @@
+[Unit]
+Description=Mount Unit for Storage
+
+[Mount]
+What=/dev/disk/by-uuid/c3bc467a-e4d4-4f34-8cd1-0de95d1c6375
+Where=/media/storage
+Type=btrfs
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target

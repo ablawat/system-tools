@@ -1,0 +1,11 @@
+[Unit]
+Description=Mount Unit for User Cache
+
+[Mount]
+What=tmpfs
+Where=/usr/cache
+Type=tmpfs
+Options=noswap
+
+[Install]
+WantedBy=multi-user.target

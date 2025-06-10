@@ -1,0 +1,11 @@
+[Unit]
+Description=CPU Power Limit
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=~
+ExecStart=/usr/local/bin/cpu-power-limit.sh
+
+[Install]
+WantedBy=multi-user.target
