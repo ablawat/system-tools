@@ -1,0 +1,17 @@
+# System Hardware Information
+lshw
+
+# DMI Table Decoder
+dmidecode
+
+# Hardware Monitor of Temperature Voltage and Fan
+lm-sensors
+
+# Storage Systems Monitoring by S.M.A.R.T.
+smartmontools
+
+# Filesystem Events Monitoring by Inode Notify
+inotify-tools
+
+# Interactive Process Viewer
+htop

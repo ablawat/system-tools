@@ -1,4 +1,3 @@
-#---------------------
 package_list_install()
 {
     # set package list file name

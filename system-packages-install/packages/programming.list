@@ -1,0 +1,20 @@
+# GNU Make and Ninja Build Systems
+make ninja-build
+# CMake Build System Generator
+cmake
+
+# GNU C compiler
+gcc
+# GNU Debugger
+gdb
+
+gcc-arm-none-eabi
+
+# Package Manager for Python
+python3-pip
+
+# Serial Port Extension
+python3-serial
+
+# Symlink for Python
+python-is-python3
