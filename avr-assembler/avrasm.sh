@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
-# set package list file name
-PROGRAM_CONFIG_FILE_NAME=program.conf
+# set project configuration file name
+PROJECT_CONFIG_FILE_NAME=project.conf
 
 # define project source file name
 SOURCE_NAME=''
@@ -9,13 +9,13 @@ SOURCE_NAME=''
 # define project target include file name
 INCLUDE_NAME=''
 
-# define project peripheral basic software directory name
-PERIPHERAL_NAME=''
+# define project peripheral basic software directory path
+PERIPHERAL_DIR_PATH=''
 
 # define project configuration parameters
 OPTIONS_CONFIG='SOURCE_NAME:source-name
                 INCLUDE_NAME:include-name
-                PERIPHERAL_NAME:peripheral-dir-name'
+                PERIPHERAL_DIR_PATH:peripheral-path'
 
 # read every line from file
 while read -r line
@@ -53,7 +53,7 @@ do
             done
         fi
     fi
-done < "$PROGRAM_CONFIG_FILE_NAME"
+done < "$PROJECT_CONFIG_FILE_NAME"
 
 # when AVR_INC_PATH is not defined
 if [ -z ${AVR_INC_PATH+x} ]
@@ -81,10 +81,10 @@ BUILD_DIR_NAME=build
 SOURCE_BASE=${SOURCE_NAME%.*}
 
 # get project root directory path
-PROGRAM_DIR_PATH=$(pwd)
+PROJECT_DIR_PATH=$(pwd)
 
 # define include directories
-INCLUDES="-I $AVR_INC_PATH -I $PROGRAM_DIR_PATH/$PERIPHERAL_NAME -i $INCLUDE_NAME"
+INCLUDES="-I $AVR_INC_PATH -I $PROJECT_DIR_PATH/$PERIPHERAL_DIR_PATH -i $INCLUDE_NAME"
 
 # define build options
 OPTIONS='-fI -W+ie'
