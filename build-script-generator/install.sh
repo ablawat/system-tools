@@ -1,31 +1,42 @@
 #!/usr/bin/env sh
 
-# set executable directory
+# get effective user identifier
+USER_ID=$(id -u)
+
+# when user is not root
+if [ $USER_ID -ne 0 ]
+then
+    # elevate user privileges into root
+    echo 'Switching into root...'
+    exec sudo "$0" "$@"
+fi
+
+# set executable installation directory
 INSTALL_EXE_DIR=/usr/local/bin
 
-# set configuration directory
+# set configuration installation directory
 INSTALL_CFG_DIR=/usr/local/etc
 
-# set program name
-PROGRAM_NAME=build-gen
+# set script name
+SCRIPT_NAME=build-gen
 
-# set program files
-PROGRAM_EXE_FILE_NAMES=build-gen.py
-PROGRAM_CFG_FILE_NAMES=build-gen.template
+# set script files
+SCRIPT_EXE_FILE_NAMES=build-gen.py
+SCRIPT_CFG_FILE_NAMES=build-gen.template
 
-# copy program files into installation executable directory
-cp $PROGRAM_EXE_FILE_NAMES $INSTALL_EXE_DIR
+# copy script files into installation executable directory
+cp $SCRIPT_EXE_FILE_NAMES $INSTALL_EXE_DIR
 
 # when copy has failed
 if [ $? -ne 0 ]
 then
     # report error and terminate
-    echo "[error] Executable could not be installed in '$INSTALL_EXE_DIR'."
+    echo "[error] Script could not be installed in '$INSTALL_EXE_DIR'."
     exit 1
 fi
 
-# create program configuration directory
-mkdir -p $INSTALL_CFG_DIR/$PROGRAM_NAME
+# create script configuration directory
+mkdir -p $INSTALL_CFG_DIR/$SCRIPT_NAME
 
 # when creation has failed
 if [ $? -ne 0 ]
@@ -35,8 +46,8 @@ then
     exit 1
 fi
 
-# copy program files into installation configuration directory
-cp $PROGRAM_CFG_FILE_NAMES $INSTALL_CFG_DIR/$PROGRAM_NAME
+# copy script files into installation configuration directory
+cp $SCRIPT_CFG_FILE_NAMES $INSTALL_CFG_DIR/$SCRIPT_NAME
 
 # when copy has failed
 if [ $? -ne 0 ]
@@ -46,17 +57,17 @@ then
     exit 1
 fi
 
-# when program is not installed
-if ! [ -h $INSTALL_EXE_DIR/$PROGRAM_NAME ]
+# when script is not installed
+if ! [ -h $INSTALL_EXE_DIR/$SCRIPT_NAME ]
 then
-    # install program
-    ln -s $INSTALL_EXE_DIR/$PROGRAM_NAME.py $INSTALL_EXE_DIR/$PROGRAM_NAME
+    # install script
+    ln -s $INSTALL_EXE_DIR/$SCRIPT_NAME.py $INSTALL_EXE_DIR/$SCRIPT_NAME
 
     # when installation has failed
     if [ $? -ne 0 ]
     then
         # report error and terminate
-        echo "[error] Command '$PROGRAM_NAME' could not be installed in '$INSTALL_EXE_DIR'."
+        echo "[error] Command '$SCRIPT_NAME' could not be installed in '$INSTALL_EXE_DIR'."
         exit 1
     fi
 fi
@@ -68,13 +79,13 @@ then
     echo "[warning] Directory '$INSTALL_EXE_DIR' is not in PATH."
 fi
 
-# when program command is not found
-if ! command -v $PROGRAM_NAME > /dev/null
+# when script command is not found
+if ! command -v $SCRIPT_NAME > /dev/null
 then
     # report error and terminate
-    echo "[error] Command '$PROGRAM_NAME' is not executable through PATH."
+    echo "[error] Command '$SCRIPT_NAME' is not found."
     exit 1
 fi
 
 # report success
-echo "Command '$PROGRAM_NAME' is successfully installed."
+echo "Command '$SCRIPT_NAME' is successfully installed."

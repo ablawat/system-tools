@@ -17,8 +17,21 @@ class ReadState(enum.Enum):
     GET_SINGLE_LINE_VALUE = 2
     GET_MULTI_LINE_VALUE  = 3
 
-#-----------------------------------
+#----------------------------------#
 def config_line_attribute_get(line):
+    """
+    Parses Line for Attribute
+
+    Parameters:
+        line (str) : a line of configuration file
+
+    Return:
+         (name, Identifier) : an attribute name and identifier
+
+    Exceptions:
+        ValueError
+        AttributeError
+    """
 
     # remove leading and trailing whitespace characters
     striped = line.strip()
@@ -63,35 +76,49 @@ def config_line_attribute_get(line):
                 # attribute separator ':' is not used correctly
                 raise ValueError('config: attribute syntax is not correct')
 
+        # when markers are not found in correct place
         else:
             # attribute markers '<' and '>' are not used correctly
             raise ValueError('config: attribute syntax is not correct')
 
+    # when line is empty
     except IndexError:
         # no printable characters in line
         raise AttributeError('config: line is empty')
 
-#-----------------------
+#----------------------#
 def template_read(file):
+    """
+    Reads Template File
+
+    Parameters:
+        file (str) : a name of template file
+
+    Return:
+        attributes (dict) : parsed attributes from configuration
+
+    Exceptions:
+        ValueError
+    """
 
     # open template file
     with open(file) as template_file:
         # read all lines from template
-        template_lines = template_file.readlines()
+        template = template_file.readlines()
 
     # create attributes structure
-    template_attributes = {}
+    attributes = {}
 
     name = ''
     state = ReadState.SEARCH_FOR_ATTRIBUTE
     value = []
 
     # go through every line of template
-    for line in template_lines:
+    for line in template:
         # when in previous line found single-line attribute
         if state == ReadState.GET_SINGLE_LINE_VALUE:
             # add attribute with single-line value
-            template_attributes[name] = line
+            attributes[name] = line
             # search for possible next attribute
             state = ReadState.SEARCH_FOR_ATTRIBUTE
 
@@ -122,7 +149,7 @@ def template_read(file):
                     # when
                     if id_type == Identifier.MULTI_END and name == id:
                         # add attribute with multi-line value
-                        template_attributes[name] = value
+                        attributes[name] = value
                         # search for possible next attribute
                         state = ReadState.SEARCH_FOR_ATTRIBUTE
 
@@ -158,69 +185,107 @@ def template_read(file):
         # attributes configuration is not correct
         raise ValueError('error: bad attribute')
 
-    return template_attributes
+    return attributes
 
-#--------------------------------
+#-------------------------------#
 def sources_names_get(directory):
+    """
+    Finds Source Code Files in Directory
 
-    # create sources list
-    source_names = []
+    Parameters:
+        directory (str) : a path of a directory
 
-    # find all files from directory
+    Return:
+         (list) : names of source files
+
+    Exceptions:
+        IndexError : when no source code file was found
+    """
+
+    # create sources names
+    sources = []
+
+    # find all files in directory
     files = os.listdir(directory)
 
     # go through every found file
-    for file_name in files:
+    for file in files:
         # when file is a C language source
-        if file_name.endswith('.c'):
+        if file.endswith('.c'):
             # get file base name
-            file_name_base = os.path.splitext(file_name)[0]
+            name = os.path.splitext(file)[0]
 
-            # add name to sources
-            source_names.append(file_name_base)
+            # add file name to sources
+            sources.append(name)
 
     # when no files were found
-    if not source_names:
+    if not sources:
         # no sources found
         raise IndexError('sources not found')
 
-    return source_names
+    return sources
 
-#---------------------------------------
+#--------------------------------------#
 def objects_build_rules_create(sources):
+    """
+    Generates Object Files Build Rules
+
+    Parameters:
+        sources (list) : names of source files
+
+    Return:
+         (list) : objects build rules
+    """
 
     max_length = 0
     build_rules = []
 
-    for source_name in sources:
+    # go through every source file
+    for source in sources:
         # generate object build rule
-        build_rule = template_attributes['object-build'].format(source_name)
-        splited = build_rule.split(':', 1)
+        rule = template_attributes['object-build'].format(source)
+        splited = rule.split(':', 1)
         build_rules.append(splited)
 
-        # when length is greater than all previous
-        if len(splited[0]) > max_length:
-            # set new maximum
-            max_length = len(splited[0])
+        # get length of first part
+        length = len(splited[0])
 
-    make_objects_list = []
+        # when length is greater than all previous
+        if length > max_length:
+            # set new maximum
+            max_length = length
+
+    # create build rules
+    make_objects = []
 
     # add break and comment
-    make_objects_list.append('\n')
-    make_objects_list.extend(template_attributes['object-comment'])
+    make_objects.append('\n')
+    make_objects.extend(template_attributes['object-comment'])
 
-    for rule_splited in build_rules:
+    # go through every build rule
+    for rule in build_rules:
         # create whitespace complement to maximum length
-        chars = ' ' * (max_length - len(rule_splited[0]))
+        chars = ' ' * (max_length - len(rule[0]))
 
         # add generated build rule of source file
-        make_objects_list.append(rule_splited[0] + ':' + chars + rule_splited[1])
+        make_objects.append(rule[0] + ':' + chars + rule[1])
 
-    return make_objects_list
+    return make_objects
 
-#-------------------------------------------------
+#------------------------------------------------#
 def executable_link_rule_create(project, sources):
+    """
+    Generates Link Rule
 
+    Parameters:
+        project (str)  : a name of project
+        sources (list) : names of source files
+
+    Return:
+         (list) : link rule
+    """
+
+    # create link rule
     make_executable_list = []
 
     # add break and comment
@@ -228,25 +293,26 @@ def executable_link_rule_create(project, sources):
     make_executable_list.extend(template_attributes['executable-comment'])
 
     # generate executable link rule
-    link_rule = template_attributes['executable-link'].format(project)
+    rule = template_attributes['executable-link'].format(project)
 
     # add line break symbol
-    link_rule = link_rule.rstrip('\n') + ' $' + '\n'
+    rule = rule.rstrip('\n') + ' $' + '\n'
 
     # add executable link rule
-    make_executable_list.append(link_rule)
+    make_executable_list.append(rule)
 
-    for i, source_name in enumerate(sources):
+    # go through
+    for i, source in enumerate(sources):
         # generate link rule for object file
-        link_rule = template_attributes['object-link'].format(source_name)
+        rule = template_attributes['object-link'].format(source)
 
         # when there is not last object file
         if i < len(sources) - 1:
             # add line break symbol
-            link_rule = link_rule.rstrip('\n') + ' $' + '\n'
+            rule = rule.rstrip('\n') + ' $' + '\n'
 
         # add generated link rule of object file
-        make_executable_list.append(link_rule)
+        make_executable_list.append(rule)
 
     return make_executable_list
 
