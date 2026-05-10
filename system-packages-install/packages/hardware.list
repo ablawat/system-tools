@@ -1,8 +1,11 @@
 # System Hardware Information
 lshw
 
-# DMI Table Decoder
+# DMI Information Decoder
 dmidecode
+
+# EDID Information Decoder
+edid-decode
 
 # Hardware Monitor of Temperature Voltage and Fan
 lm-sensors

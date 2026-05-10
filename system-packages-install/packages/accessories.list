@@ -2,7 +2,7 @@
 nomacs
 
 # Vi IMproved Text Editor
-gvim
+vim-gtk3
 
 # GNOME Partition Editor
 gparted
